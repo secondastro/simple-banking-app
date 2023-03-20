@@ -1,5 +1,7 @@
 package com.skypro.bankingapp.service;
 
+import com.skypro.bankingapp.dto.UserDTO;
+import com.skypro.bankingapp.dto.request.CreateUserRequest;
 import com.skypro.bankingapp.exception.InvalidPasswordException;
 import com.skypro.bankingapp.exception.UserExistsException;
 import com.skypro.bankingapp.exception.UserNotFoundException;
@@ -12,59 +14,69 @@ import java.util.*;
 
 @Service
 public class UserService {
-    private final Map<String, User> userMap = new HashMap<>();
+    private final Map<String, User> users = new HashMap<>();
 
-    public User addUser(User user) {
-        if (userMap.containsKey(user.getUsername())) {
+    public UserDTO addUser(CreateUserRequest userRequest) {
+        if (!userRequest.password().equals(userRequest.repeatPassword())){
+            throw new InvalidPasswordException("Пароли не совпадают");
+        }
+        if (users.containsKey(userRequest.username())) {
             throw new UserExistsException();
         }
-        userMap.put(user.getUsername(), user);
-        return createNewUserAccount(user);
+        //validate(userRequest);
+        User user = userRequest.toUser();
+        users.put(user.getUsername(), user);
+        createNewUserAccount(user);
+        return UserDTO.fromUser(user);
+    }
+
+    private void validate(CreateUserRequest userRequest) {
     }
 
     public User updateUser(String username, String firstName, String lastName) {
-        if (!userMap.containsKey(username)) {
+        if (!users.containsKey(username)) {
             throw new UserNotFoundException();
         }
-        User user = userMap.get(username);
+        User user = users.get(username);
         user.setFirstName(firstName);
         user.setLastName(lastName);
         return user;
     }
 
     public void updatePassword(String username, String password, String newPassword) {
-        if (!userMap.containsKey(username)) {
+        if (!users.containsKey(username)) {
             throw new UserNotFoundException();
         }
-        User user = userMap.get(username);
+        User user = users.get(username);
         if (!user.getPassword().equals(password)) {
-            throw new InvalidPasswordException();
+            throw new InvalidPasswordException("Пароли не совпадают");
         }
         user.setPassword(newPassword);
     }
 
-    public User removeUser(String username) {
-        if (!userMap.containsKey(username)) {
+    public void removeUser(String username) {
+        if (!users.containsKey(username)) {
             throw new UserNotFoundException();
         }
-        return userMap.remove(username);
+       users.remove(username);
     }
 
     public User getUser(String username) {
-        if (!userMap.containsKey(username)) {
+        if (!users.containsKey(username)) {
             throw new UserNotFoundException();
         }
-        return userMap.get(username);
+        return users.get(username);
     }
 
-    public Collection<User> getAllUsers() {
-        return userMap.values();
+    public Collection<UserDTO> getAllUsers() {
+        return users.values().stream()
+                .map(UserDTO::fromUser)
+                .toList();
     }
 
-    private User createNewUserAccount(User user) {
+    private void createNewUserAccount(User user) {
         user.addAccount(new Account(UUID.randomUUID().toString(), 0.0, Currency.RUB));
         user.addAccount(new Account(UUID.randomUUID().toString(), 0.0, Currency.EUR));
         user.addAccount(new Account(UUID.randomUUID().toString(), 0.0, Currency.USD));
-        return user;
     }
 }
