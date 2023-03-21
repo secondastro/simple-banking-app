@@ -1,16 +1,26 @@
 package com.skypro.bankingapp.model;
 
+import javax.persistence.*;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-
+@Entity
+@Table(name = "users")
 public class User {
+    @Column(nullable = false, length = 64)
     private String firstName;
+    @Column(nullable = false, length = 64)
     private String lastName;
-    private final String username;
+    @Id
+    private String username;
+    @Column(nullable = false)
     private String password;
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "user", cascade = CascadeType.REMOVE)
     private final Set<Account> accounts = new HashSet<>();
+
+    public User() {
+    }
 
     public User(String firstName, String lastName, String username, String password) {
         this.firstName = firstName;
@@ -37,6 +47,10 @@ public class User {
 
     public String getUsername() {
         return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getPassword() {
